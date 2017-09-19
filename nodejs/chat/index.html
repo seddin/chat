@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Chat App</title>
+    </head>
+    <body style="text-align: center; background-color: #343434; color: white;">
+        <h3>Welcome to the chat</h3>
+        <p>Introduce your name to start chatting: </p>
+        
+        <div id="loginWindow">
+            <input type="text" name="username" id="username" placeholder="user name"/>
+            <input type="button" id="submit" value="submit" name="submit" />     
+            <div style="margin: 10px 10px;"></div>
+        </div>
+
+        <div id='chatWindow' style="display: none;">
+        <table id='chat' style="margin: 0 auto;">
+            <tbody>
+            <tr>
+                <td style="background-color: black; color: white; text-align: left;">Server</td>
+                <td>:</td>
+                <td>Welcome to the most awesome chat you'll ever be able to experience!</td>
+            </tr>
+
+            </tbody>
+        </table>
+
+        <table style="margin: 0 auto;">
+            <tr>
+                <td>
+                    <input type="text" name="txt_msg" id="txt_msg"/>
+                    <input type="button" name="send_btn" id="send_btn" value="Send"/>
+                </td>
+            </tr>
+        </table>
+        </div>
+
+        <div>
+            <input type="button" id="changeUsername" value="Change Username"/>
+        </div>
+        <audio id="notification">
+            <source src="new_msg.mp3" type="audio/mpeg">
+        </audio>
+        
+        <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+        <script src="/socket.io/socket.io.js"></script>
+        <script>
+            var socket = io.connect('http://127.0.0.1:8080');
+            var username;
+            
+            $('#submit').click( ()=>{
+                username = $('#username').val();
+                socket.emit('new_client', username);
+                $('#chatWindow').css('display', 'block');
+                $('#loginWindow').css('display', 'none');
+                
+            });
+            
+            $('#send_btn').click(()=>{
+                txt_msg = $('#txt_msg').val();
+                socket.emit('send_msg', txt_msg, username);
+                $('#chat > tbody:last-child').append(
+                    '<tr><td style="background-color: black; color: white; text-align: left;">'+username+'</td><td>:</td><td>'+txt_msg+'</td></tr>'
+                );
+                $('#txt_msg').val('');
+            });
+            
+            socket.on('new_cli', (message)=>{
+                $('#chat > tbody:last-child').append(
+                    '<tr><td style="background-color: black; color: white; text-align: left;">Server</td><td>:</td><td>'+message+'</td></tr>'
+                );
+            });
+            
+            socket.on('new_msg', (content)=>{
+                console.log(content);
+                $('#chat > tbody:last-child').append(
+                    '<tr><td style="background-color: black; color: white; text-align: left;">'+content[0]+'</td><td>:</td><td>'+content[1]+'</td></tr>'
+                );
+                $('#notification').play();
+            });
+
+            $('#changeUsername').click(()=>{
+                var newUsername = prompt('What would you like to be called naow?');
+                socket.emit('newUsername', [newUsername, username]);
+                username = newUsername;
+            })
+
+            window.onbeforeunload = function() {
+                //return "Bye now!";
+                socket.emit('cli_left', username);
+            };
+            
+        </script>
+            
+    </body>
+</html>
